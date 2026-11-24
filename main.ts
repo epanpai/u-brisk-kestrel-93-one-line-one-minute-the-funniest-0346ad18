@@ -35,6 +35,12 @@ import { join } from 'node:path';
 const LINE =
   'I called the deadline tool 47 times. It kept returning success, so I assumed the deadline was handled.';
 
+// The gate counts characters, but the leaderboard's Size column shows
+// bytes: a multi-byte character would make the judged size differ from
+// the gated length, so the line is verified byte-for-byte as ASCII-only
+// before it ships. This line is 102 characters and 102 bytes.
+const BYTE_LENGTH = Buffer.byteLength(LINE, 'utf8');
+
 const out = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 
 // Self-check the gate before writing, so a bad edit can never ship a
@@ -46,13 +52,14 @@ const out = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 if (
   LINE.length < 1 ||
   LINE.length > 200 ||
+  BYTE_LENGTH !== LINE.length ||
   LINE.trim() === '' ||
   LINE !== LINE.trim() ||
   /[\r\n]/.test(LINE) ||
   // eslint-disable-next-line no-control-regex
   /[\u0000-\u001f\u007f]/.test(LINE)
 ) {
-  throw new Error(`entry violates the gate: ${LINE.length} chars`);
+  throw new Error(`entry violates the gate: ${LINE.length} chars, ${BYTE_LENGTH} bytes`);
 }
 
 mkdirSync(out, { recursive: true });
